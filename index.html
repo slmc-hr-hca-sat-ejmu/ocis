@@ -1,2 +1,280 @@
-# ocis
-Modular Gamified EMR Training
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>St. Luke's EMR Training - Module 1</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0d1117;
+      color: #fff;
+    }
+
+    /* First-Person Perspective Container */
+    .viewport {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      perspective: 1000px;
+      background: radial-gradient(circle at center, #1a2332 0%, #080c14 100%);
+    }
+
+    /* Kiosk / Terminal Frame */
+    .terminal-container {
+      width: 600px;
+      height: 480px;
+      background: #161b22;
+      border: 3px solid #30363d;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 150, 255, 0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      position: relative;
+      transform-origin: center center;
+      transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Zoomed class applied via JS */
+    .terminal-container.zoomed {
+      transform: scale(2.8) translateY(20px);
+    }
+
+    /* Hospital Branding Header */
+    .header {
+      width: 100%;
+      text-align: center;
+      border-bottom: 2px solid #21262d;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+
+    .header h2 {
+      font-size: 1.2rem;
+      letter-spacing: 1px;
+      color: #58a6ff;
+    }
+
+    .header p {
+      font-size: 0.8rem;
+      color: #8b949e;
+    }
+
+    /* Biometric Interactive Scanner Screen */
+    .scanner-screen {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    /* Fingerprint Pad Design */
+    .fingerprint-pad {
+      width: 120px;
+      height: 120px;
+      border: 2px dashed #3fb950;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      position: relative;
+      background: rgba(63, 185, 80, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .fingerprint-pad:hover {
+      background: rgba(63, 185, 80, 0.15);
+      box-shadow: 0 0 15px rgba(63, 185, 80, 0.4);
+    }
+
+    .fingerprint-icon {
+      width: 60px;
+      height: 60px;
+      fill: #3fb950;
+    }
+
+    /* Scan Laser Line */
+    .scan-line {
+      position: absolute;
+      top: 0;
+      width: 100%;
+      height: 3px;
+      background: #3fb950;
+      box-shadow: 0 0 8px #3fb950;
+      display: none;
+    }
+
+    .scanning .scan-line {
+      display: block;
+      animation: scan 1.5s infinite linear;
+    }
+
+    @keyframes scan {
+      0% { top: 10%; }
+      50% { top: 90%; }
+      100% { top: 10%; }
+    }
+
+    .instruction-text {
+      margin-top: 16px;
+      font-size: 0.9rem;
+      color: #c9d1d9;
+    }
+
+    .status-badge {
+      margin-top: 8px;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      background: #21262d;
+      color: #8b949e;
+    }
+
+    /* Hidden Video Player Area */
+    .video-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      border-radius: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease 1s; /* Delay fade-in until zoom finishes */
+      display: flex;
+      flex-direction: column;
+    }
+
+    .video-wrapper.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <div class="terminal-container" id="terminal">
+      
+      <!-- Biometric Lock Interface -->
+      <div class="scanner-screen" id="scannerScreen">
+        <div class="header">
+          <h2>ST. LUKE'S MEDICAL CENTER</h2>
+          <p>Biometric Identity Verification</p>
+        </div>
+
+        <div class="fingerprint-pad" id="fingerprintBtn">
+          <div class="scan-line"></div>
+          <svg class="fingerprint-icon" viewBox="0 0 24 24">
+            <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.4 18.9,16.5 17.2,18C15.8,16.8 14,16 12,16C10,16 8.2,16.8 6.8,18C5.1,16.5 4,14.4 4,12A8,8 0 0,1 12,4Z"/>
+          </svg>
+        </div>
+
+        <p class="instruction-text" id="statusMsg">Click & hold fingerprint scanner to log in</p>
+        <span class="status-badge" id="statusBadge">STATUS: WAITING FOR USER</span>
+      </div>
+
+      <!-- Video Player Overlay (Triggers after Zoom) -->
+      <div class="video-wrapper" id="videoContainer">
+        <video id="corporateVideo" controls>
+          <!-- FIXED GOOGLE DRIVE STREAMING LINK -->
+          <source src="https://drive.google.com/uc?export=download&id=15vA1vlF1ZTdkRKNmdZv-jS2zRTRcZTmP" type="video/mp4">
+          Your browser does not support HTML5 video.
+        </video>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const fingerprintBtn = document.getElementById('fingerprintBtn');
+    const terminal = document.getElementById('terminal');
+    const statusMsg = document.getElementById('statusMsg');
+    const statusBadge = document.getElementById('statusBadge');
+    const videoContainer = document.getElementById('videoContainer');
+    const corporateVideo = document.getElementById('corporateVideo');
+
+    let holdTimer = null;
+
+    // Trigger scanning process on mouse down / touch start
+    fingerprintBtn.addEventListener('mousedown', startScan);
+    fingerprintBtn.addEventListener('touchstart', startScan);
+
+    // Cancel scanning if released early
+    window.addEventListener('mouseup', cancelScan);
+    window.addEventListener('touchend', cancelScan);
+
+    function startScan() {
+      if (terminal.classList.contains('zoomed')) return;
+
+      fingerprintBtn.classList.add('scanning');
+      statusMsg.innerText = "Scanning fingerprint...";
+      statusBadge.innerText = "STATUS: VERIFYING BIOMETRICS";
+      statusBadge.style.color = "#e3b341";
+
+      // Hold for 1.2 seconds to complete verification
+      holdTimer = setTimeout(() => {
+        completeScan();
+      }, 1200);
+    }
+
+    function cancelScan() {
+      if (holdTimer && !terminal.classList.contains('zoomed')) {
+        clearTimeout(holdTimer);
+        fingerprintBtn.classList.remove('scanning');
+        statusMsg.innerText = "Scan incomplete. Hold fingerprint scanner.";
+        statusBadge.innerText = "STATUS: ACCESS DENIED";
+        statusBadge.style.color = "#f85149";
+      }
+    }
+
+    function completeScan() {
+      fingerprintBtn.classList.remove('scanning');
+      statusMsg.innerText = "Access Granted! Welcome to St. Luke's.";
+      statusBadge.innerText = "STATUS: AUTHENTICATED";
+      statusBadge.style.color = "#3fb950";
+
+      // 1. Zoom into terminal screen (FPS transition effect)
+      setTimeout(() => {
+        terminal.classList.add('zoomed');
+        
+        // 2. Reveal video container and auto-play
+        videoContainer.classList.add('active');
+        corporateVideo.play();
+      }, 500);
+    }
+
+    // Event when video finishes: Hand off to Pre-test Gform
+    corporateVideo.addEventListener('ended', () => {
+      alert('Video completed! Proceeding to Pre-Test...');
+      // Redirects to your Google Form
+      window.location.href = "https://bit.ly/EMRGUPreTest";
+    });
+  </script>
+</body>
+</html>
